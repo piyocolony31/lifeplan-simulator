@@ -25,14 +25,22 @@ export function exportSimulationToCSV() {
         '運用益_万円'         // investmentReturn
     ];
 
-    const rows: string[] = [];
-    rows.push(headers.join(','));
+    const typeLabels: Record<string, string> = {
+        'NEW_HOUSE': '新築戸建',
+        'USED_HOUSE': '中古戸建',
+        'NEW_CONDO': '新築マンション',
+        'USED_CONDO': '中古マンション',
+        'RENT': '賃貸'
+    };
+
+    const rows = [headers.join(',')];
 
     plans.forEach(plan => {
         // AIでの比較分析を目的とするため、非表示にしているプランも含めてすべて出力します。
         plan.results.forEach(res => {
             const row = [
                 `"${plan.name}"`, // カンマが含まれる可能性を考慮してダブルクオートで囲む
+                `"${typeLabels[plan.params.planType] || plan.params.planType}"`,
                 res.year,
                 res.age,
                 Math.round(res.netWorth),

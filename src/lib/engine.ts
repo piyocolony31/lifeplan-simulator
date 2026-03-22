@@ -1,5 +1,5 @@
 import { SimulationParams, YearlyResult } from './types';
-import { MORTGAGE_DEDUCTION_CONFIG, FEE_CONFIG, TAX_CONFIG } from './constants';
+import { MORTGAGE_DEDUCTION_CONFIG, TAX_CONFIG } from './constants';
 
 /**
  * 元利均等返済の毎月返済額を計算

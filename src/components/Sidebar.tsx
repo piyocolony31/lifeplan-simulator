@@ -84,29 +84,36 @@ export default function Sidebar() {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-auto">
-                                    {plan.params.planType === 'RENT' ? (
-                                        <>
-                                            <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
-                                                <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Rent</span>
-                                                {plan.params.monthlyRent}万
-                                            </div>
-                                            <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
-                                                <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Category</span>
-                                                賃貸
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
-                                                <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Interest</span>
-                                                {plan.params.loanInterestRate}%
-                                            </div>
-                                            <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
-                                                <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Price</span>
-                                                {plan.params.propertyPrice}万
-                                            </div>
-                                        </>
-                                    )}
+                                    {(() => {
+                                        const typeLabels: Record<string, string> = {
+                                            'NEW_HOUSE': '新築戸建',
+                                            'USED_HOUSE': '中古戸建',
+                                            'NEW_CONDO': '新築マンション',
+                                            'USED_CONDO': '中古マンション',
+                                            'RENT': '賃貸'
+                                        };
+                                        const label = typeLabels[plan.params.planType] || '不明';
+
+                                        return (
+                                            <>
+                                                {plan.params.planType === 'RENT' ? (
+                                                    <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
+                                                        <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Rent</span>
+                                                        {plan.params.monthlyRent}万
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
+                                                        <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Price</span>
+                                                        {plan.params.propertyPrice}万
+                                                    </div>
+                                                )}
+                                                <div className="bg-blue-50/50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-blue-600 border border-blue-100/50">
+                                                    <span className="block text-[8px] opacity-70 uppercase tracking-tighter text-blue-400">Type</span>
+                                                    {label}
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         ))}
