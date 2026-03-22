@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { SimulationParams, YearlyResult, HousingPlanType, UserBaseParams, LifeEvent } from '../lib/types';
-import { runSimulation } from '../lib/engine';
+import { runSimulation, calculateInitialFees } from '../lib/engine';
 
 interface PlanState {
     id: string;
@@ -52,48 +52,69 @@ const DEFAULT_USER_PARAMS: UserBaseParams = {
     commonEvents: [],
 };
 
-const createDefaultPlanParams = (type: HousingPlanType, userParams: UserBaseParams): SimulationParams => ({
-    ...userParams,
-    planType: type,
-    propertyPrice: 4000,
-    downPayment: 500,
-    loanAmount: 3500,
-    loanInterestRate: 0.7,
-    loanPeriod: 35,
-    propertyCategory: 'ZEH',
-    householdType: 'CHILD_REARING_OR_YOUNG',
-    managementFee: 2,
-    repairReserve: 2,
-    repairReserveStepUpRate: 15,
-    fixedAssetTax: 15,
-    insuranceFee: 2,
-    landValue: 1600,
-    buildingValue: 2400,
-    buildingDepreciationYears: 22,
-    monthlyRent: 12,
-    renewalFeeRate: 1,
-    events: [],
-});
+const createDefaultPlanParams = (type: HousingPlanType, userParams: UserBaseParams): SimulationParams => {
+    const params: SimulationParams = {
+        ...userParams,
+        planType: type,
+        propertyPrice: 4000,
+        downPayment: 500,
+        loanAmount: 3500,
+        loanInterestRate: 0.7,
+        loanPeriod: 35,
+        propertyCategory: 'ZEH',
+        householdType: 'CHILD_REARING_OR_YOUNG',
+        managementFee: 2,
+        repairReserve: 2,
+        repairReserveStepUpRate: 15,
+        fixedAssetTax: 15,
+        insuranceFee: 2,
+        landValue: 1600,
+        buildingValue: 2400,
+        buildingDepreciationYears: 22,
+        monthlyRent: 12,
+        renewalFeeRate: 1,
+        events: [],
+    };
+
+    // 初期費用をライフイベントとして追加
+    const initialFee = calculateInitialFees(params);
+    if (initialFee > 0) {
+        params.events.push({
+            id: `initial-fee-${Date.now()}`,
+            year: userParams.currentAge,
+            label: type === 'RENT' ? '賃貸初期費用' : '購入時諸費用',
+            cost: Math.round(initialFee),
+        });
+    }
+
+    return params;
+};
 
 export const usePlanStore = create<PlanStore>()(
     persist(
         (set, get) => ({
             userParams: DEFAULT_USER_PARAMS,
             plans: [
-                {
-                    id: 'plan-1',
-                    name: '新築戸建',
-                    params: createDefaultPlanParams('NEW_HOUSE', DEFAULT_USER_PARAMS),
-                    results: runSimulation(createDefaultPlanParams('NEW_HOUSE', DEFAULT_USER_PARAMS)),
-                    isVisible: true,
-                },
-                {
-                    id: 'plan-2',
-                    name: '賃貸住まい',
-                    params: createDefaultPlanParams('RENT', DEFAULT_USER_PARAMS),
-                    results: runSimulation(createDefaultPlanParams('RENT', DEFAULT_USER_PARAMS)),
-                    isVisible: true,
-                }
+                (() => {
+                    const params = createDefaultPlanParams('NEW_HOUSE', DEFAULT_USER_PARAMS);
+                    return {
+                        id: 'plan-1',
+                        name: '新築戸建',
+                        params: params,
+                        results: runSimulation(params),
+                        isVisible: true,
+                    };
+                })(),
+                (() => {
+                    const params = createDefaultPlanParams('RENT', DEFAULT_USER_PARAMS);
+                    return {
+                        id: 'plan-2',
+                        name: '賃貸住まい',
+                        params: params,
+                        results: runSimulation(params),
+                        isVisible: true,
+                    };
+                })()
             ],
             _hasHydrated: false,
             setHasHydrated: (state) => set({ _hasHydrated: state }),

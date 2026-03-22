@@ -11,35 +11,17 @@ export function calculateMonthlyMortgage(principal: number, annualRate: number, 
     return principal * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
 }
 
-/**
- * 初期諸費用の概算
- */
 export function calculateInitialFees(params: SimulationParams): number {
-    let initialFee = 0;
-
     if (params.planType === 'RENT') {
         // 敷金(2) + 礼金(1) + 仲介(1) + 火災保険・鍵交換(0.5) 程度と仮定
         return params.monthlyRent * 4.5;
     }
 
-    // 共通費用（印紙代、登記、融資手数料）
-    const stampDuty = 2; // 簡易的に2万円
-    const registrationFee = params.propertyPrice * FEE_CONFIG.REGISTRATION_FEE_RATE;
-    const loanFee = params.loanAmount * FEE_CONFIG.LOAN_FEE_RATE;
-
-    initialFee += stampDuty + registrationFee + loanFee;
-
-    // 仲介手数料（中古の場合）
-    if (params.planType === 'USED_HOUSE' || params.planType === 'USED_CONDO') {
-        initialFee += (params.propertyPrice * FEE_CONFIG.BROKERAGE_FEE_RATE + FEE_CONFIG.BROKERAGE_FEE_FIXED) * 1.1;
+    if (params.planType === 'NEW_CONDO' || params.planType === 'USED_CONDO' || params.planType === 'NEW_HOUSE' || params.planType === 'USED_HOUSE') {
+        // 全ての住宅購入（新築・中古問わず）のデフォルトを一律10%とする
+        return params.propertyPrice * 0.10;
     }
-
-    // 修繕積立基金（新築マンションの場合）
-    if (params.planType === 'NEW_CONDO') {
-        initialFee += 80; // 簡易的に80万円
-    }
-
-    return initialFee;
+    return 0;
 }
 
 /**
@@ -83,7 +65,7 @@ export function calculateMortgageDeduction(
  */
 export function runSimulation(params: SimulationParams): YearlyResult[] {
     const results: YearlyResult[] = [];
-    let currentAssets = params.initialAssets - params.downPayment - calculateInitialFees(params);
+    let currentAssets = params.initialAssets - params.downPayment;
     let mortgageBalance = params.loanAmount;
     const monthlyMortgage = calculateMonthlyMortgage(params.loanAmount, params.loanInterestRate, params.loanPeriod);
 
@@ -110,7 +92,7 @@ export function runSimulation(params: SimulationParams): YearlyResult[] {
         const yearlyBaseLivingExpenses = (params.baseLivingExpenses * 12) * Math.pow(1 + params.inflationRate / 100, i);
 
         let housingExpenses = 0;
-        let currentMaintenanceFee = params.managementFee;
+        const currentMaintenanceFee = params.managementFee;
         let currentRepairReserve = params.repairReserve;
 
         if (params.planType === 'RENT') {

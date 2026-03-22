@@ -126,14 +126,11 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                                     />
                                 </div>
                             </div>
-                            {plan.params.planType.startsWith('USED') && (
-                                <p className="text-[10px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-dashed mt-4 leading-relaxed font-medium">
-                                    ※中古物件のため、初期費用に<strong>仲介手数料（約3% + 6万円）</strong>が自動加算されます。
-                                </p>
-                            )}
-                            {plan.params.planType === 'NEW_CONDO' && (
-                                <p className="text-[10px] text-slate-500 bg-blue-50/50 p-2 rounded-lg border border-dashed border-blue-100 mt-4 leading-relaxed font-medium">
-                                    ※新築マンションのため、初期費用に<strong>修繕積立基金（一括）</strong>の概算が加算されます。
+                            {!isRent && (
+                                <p className="text-[10px] text-slate-500 bg-slate-50 p-3 rounded-lg border border-dashed mt-4 leading-relaxed font-medium">
+                                    ※購入諸費用のデフォルトは物件価格の<strong>10%</strong>（登記・ローン手数料・仲介手数料・修繕積立基金等）で計算し、ライフイベントに自動登録しています。
+                                    <br />
+                                    （新築マンションの場合は、仲介手数料が不要なため<strong>約6%</strong>程度が目安となります。実情に合わせてライフイベントから金額を調整してください）
                                 </p>
                             )}
                         </section>

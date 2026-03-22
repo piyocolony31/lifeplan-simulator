@@ -1,8 +1,9 @@
 'use client';
 
 import SimChart from '@/components/charts/SimChart';
+import AnnualBalanceTable from '@/components/AnnualBalanceTable';
 import { usePlanStore } from '@/store/usePlanStore';
-import { Wallet, Landmark, AlertCircle } from 'lucide-react';
+import { Wallet, AlertCircle } from 'lucide-react';
 
 export default function Home() {
   const { plans, _hasHydrated } = usePlanStore();
@@ -80,6 +81,9 @@ export default function Home() {
           </tbody>
         </table>
       </div>
+
+      {/* 年ごとの収支テーブル */}
+      <AnnualBalanceTable />
     </div>
   );
 }
