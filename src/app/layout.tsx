@@ -2,7 +2,7 @@ import './globals.css';
 import Sidebar from '@/components/Sidebar';
 
 export const metadata = {
-  title: 'LifePlan Sim - 2025対応 ライフプランシミュレーター',
+  title: 'LifePlan Sim - ライフプランシミュレーター',
   description: '住宅ローン控除2025年ルールに対応した、複数住宅プラン比較シミュレーターです。',
 };
 
