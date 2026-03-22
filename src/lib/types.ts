@@ -43,6 +43,7 @@ export interface UserBaseParams {
   investmentReturnRate: number;
   initialAssets: number;
   baseLivingExpenses: number; // 月額
+  commonEvents: LifeEvent[]; // 全プラン共通のイベント
 }
 
 /**

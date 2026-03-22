@@ -13,7 +13,8 @@ import {
     Trash2,
     Settings,
     ChevronRight,
-    ShoppingBag
+    ShoppingBag,
+    Download
 } from 'lucide-react';
 import PlanDetailEditor from './PlanDetailEditor';
 
@@ -160,6 +161,102 @@ export default function Sidebar() {
                     </div>
                 </section>
 
+                {/* 共通ライフプラン（全プラン共通） */}
+                <section className="bg-white p-4 rounded-3xl border shadow-sm space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-2 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+                            <PlusCircle size={14} />
+                            Common Life Plans
+                        </div>
+                        <button
+                            onClick={() => {
+                                const currentYear = new Date().getFullYear();
+                                usePlanStore.getState().addCommonEvent({ label: '新しいイベント', year: currentYear, cost: 100 });
+                            }}
+                            className="p-1 hover:bg-slate-100 rounded-full text-blue-600 transition-colors"
+                            title="イベントを追加"
+                        >
+                            <PlusCircle size={16} />
+                        </button>
+                    </div>
+
+                    {/* クイック追加ボタン群 */}
+                    <div className="grid grid-cols-2 gap-2 px-1">
+                        <button
+                            onClick={() => {
+                                const currentYear = new Date().getFullYear();
+                                const { addCommonEvent } = usePlanStore.getState();
+                                const presets = [
+                                    { label: '出産・育児', offset: 0, cost: 50 },
+                                    { label: '幼稚園 (3年)', offset: 3, cost: 50 },
+                                    { label: '小学校 (6年)', offset: 6, cost: 30 },
+                                    { label: '中学校 (3年)', offset: 12, cost: 50 },
+                                    { label: '高校 (3年)', offset: 15, cost: 70 },
+                                    { label: '大学 (4年)', offset: 18, cost: 150 },
+                                ];
+                                presets.forEach(p => addCommonEvent({ label: p.label, year: currentYear + p.offset, cost: p.cost }));
+                            }}
+                            className="text-[10px] font-bold py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all border border-blue-100 flex items-center justify-center gap-1"
+                        >
+                            🎓 子育てセット
+                        </button>
+                        <button
+                            onClick={() => {
+                                const currentYear = new Date().getFullYear();
+                                usePlanStore.getState().addCommonEvent({ label: '車購入', year: currentYear + 2, cost: 300 });
+                            }}
+                            className="text-[10px] font-bold py-2 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-all border border-slate-100 flex items-center justify-center gap-1"
+                        >
+                            🚗 車の購入
+                        </button>
+                    </div>
+
+                    {/* 共通イベント一覧 (編集可能) */}
+                    <div className="space-y-2">
+                        {(userParams.commonEvents || []).map((event) => (
+                            <div key={event.id} className="flex flex-col gap-1 bg-slate-50 p-2 rounded-xl group relative border border-transparent hover:border-blue-100 transition-all">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="text"
+                                        value={event.label}
+                                        onChange={e => usePlanStore.getState().updateCommonEvent(event.id, { label: e.target.value })}
+                                        className="flex-1 bg-transparent border-none text-[11px] font-bold text-slate-700 focus:ring-0 p-0"
+                                    />
+                                    <button
+                                        onClick={() => usePlanStore.getState().removeCommonEvent(event.id)}
+                                        className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center bg-white rounded-md px-1.5 py-0.5 border">
+                                        <input
+                                            type="number"
+                                            value={event.year}
+                                            onChange={e => usePlanStore.getState().updateCommonEvent(event.id, { year: Number(e.target.value) })}
+                                            className="w-12 bg-transparent border-none text-[10px] font-mono text-slate-500 p-0 text-center focus:ring-0"
+                                        />
+                                        <span className="text-[9px] text-slate-300 ml-0.5">年</span>
+                                    </div>
+                                    <div className="flex items-center bg-white rounded-md px-1.5 py-0.5 border">
+                                        <input
+                                            type="number"
+                                            value={event.cost}
+                                            onChange={e => usePlanStore.getState().updateCommonEvent(event.id, { cost: Number(e.target.value) })}
+                                            className="w-10 bg-transparent border-none text-[10px] font-bold text-red-500 p-0 text-center focus:ring-0"
+                                        />
+                                        <span className="text-[9px] text-slate-300 ml-0.5">万</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                        {(userParams.commonEvents || []).length === 0 && (
+                            <p className="text-[9px] text-slate-400 italic text-center py-2">共通イベントはありません</p>
+                        )}
+                    </div>
+                </section>
+
                 {/* 基本生活費 */}
                 <section className="bg-white p-4 rounded-2xl border shadow-sm space-y-4">
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 px-1">
@@ -216,6 +313,20 @@ export default function Sidebar() {
                         </div>
                     </div>
                 </section>
+            </div>
+
+            {/* フッターアクション */}
+            <div className="p-4 border-t bg-slate-50 mt-auto shrink-0 z-10">
+                <button
+                    onClick={async () => {
+                        const { exportSimulationToCSV } = await import('@/lib/export');
+                        exportSimulationToCSV();
+                    }}
+                    className="w-full py-3 bg-slate-800 text-white text-[12px] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition-all shadow-sm"
+                >
+                    <Download size={14} className="opacity-70" />
+                    CSV出力
+                </button>
             </div>
 
             {/* モーダル表示 */}

@@ -25,9 +25,16 @@ interface PlanStore {
     removePlan: (planId: string) => void;
     recalculateResults: () => void;
     renamePlan: (planId: string, name: string) => void;
+
+    // Plan-specific events
     addLifeEvent: (planId: string, event: Omit<LifeEvent, 'id'>) => void;
     removeLifeEvent: (planId: string, eventId: string) => void;
     updateLifeEvent: (planId: string, eventId: string, event: Partial<LifeEvent>) => void;
+
+    // Common events (Shared)
+    addCommonEvent: (event: Omit<LifeEvent, 'id'>) => void;
+    removeCommonEvent: (eventId: string) => void;
+    updateCommonEvent: (eventId: string, event: Partial<LifeEvent>) => void;
 }
 
 const DEFAULT_USER_PARAMS: UserBaseParams = {
@@ -42,6 +49,7 @@ const DEFAULT_USER_PARAMS: UserBaseParams = {
     investmentReturnRate: 3.0,
     initialAssets: 500,
     baseLivingExpenses: 15,
+    commonEvents: [],
 };
 
 const createDefaultPlanParams = (type: HousingPlanType, userParams: UserBaseParams): SimulationParams => ({
@@ -135,9 +143,13 @@ export const usePlanStore = create<PlanStore>()(
                 const { userParams, plans } = get();
                 set({
                     plans: plans.map((p) => {
+                        // 共通イベントとプラン個別イベントを合算
+                        const mergedEvents = [...(userParams.commonEvents || []), ...(p.params.events || [])];
+
                         const updatedParams: SimulationParams = {
                             ...p.params,
                             ...userParams,
+                            events: mergedEvents,
                         };
                         return {
                             ...p,
@@ -161,7 +173,7 @@ export const usePlanStore = create<PlanStore>()(
                         const newEvent: LifeEvent = { ...event, id: `event-${Date.now()}` };
                         return {
                             ...p,
-                            params: { ...p.params, events: [...p.params.events, newEvent] },
+                            params: { ...p.params, events: [...(p.params.events || []), newEvent] },
                         };
                     }),
                 }));
@@ -174,7 +186,7 @@ export const usePlanStore = create<PlanStore>()(
                         if (p.id !== planId) return p;
                         return {
                             ...p,
-                            params: { ...p.params, events: p.params.events.filter((e) => e.id !== eventId) },
+                            params: { ...p.params, events: (p.params.events || []).filter((e) => e.id !== eventId) },
                         };
                     }),
                 }));
@@ -189,12 +201,46 @@ export const usePlanStore = create<PlanStore>()(
                             ...p,
                             params: {
                                 ...p.params,
-                                events: p.params.events.map((e) =>
+                                events: (p.params.events || []).map((e) =>
                                     e.id === eventId ? { ...e, ...updatedEvent } : e
                                 ),
                             },
                         };
                     }),
+                }));
+                get().recalculateResults();
+            },
+
+            // Common events
+            addCommonEvent: (event) => {
+                const newEvent: LifeEvent = { ...event, id: `common-event-${Date.now()}` };
+                set((state) => ({
+                    userParams: {
+                        ...state.userParams,
+                        commonEvents: [...(state.userParams.commonEvents || []), newEvent]
+                    }
+                }));
+                get().recalculateResults();
+            },
+
+            removeCommonEvent: (eventId) => {
+                set((state) => ({
+                    userParams: {
+                        ...state.userParams,
+                        commonEvents: (state.userParams.commonEvents || []).filter(e => e.id !== eventId)
+                    }
+                }));
+                get().recalculateResults();
+            },
+
+            updateCommonEvent: (eventId, updatedEvent) => {
+                set((state) => ({
+                    userParams: {
+                        ...state.userParams,
+                        commonEvents: (state.userParams.commonEvents || []).map(e =>
+                            e.id === eventId ? { ...e, ...updatedEvent } : e
+                        )
+                    }
                 }));
                 get().recalculateResults();
             },
