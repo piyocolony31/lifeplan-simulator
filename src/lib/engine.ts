@@ -1,4 +1,4 @@
-import { SimulationParams, YearlyResult, HousingPlanType } from './types';
+import { SimulationParams, YearlyResult } from './types';
 import { MORTGAGE_DEDUCTION_CONFIG, FEE_CONFIG, TAX_CONFIG } from './constants';
 
 /**

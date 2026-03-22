@@ -35,6 +35,9 @@ interface PlanStore {
     addCommonEvent: (event: Omit<LifeEvent, 'id'>) => void;
     removeCommonEvent: (eventId: string) => void;
     updateCommonEvent: (eventId: string, event: Partial<LifeEvent>) => void;
+
+    // Import
+    importData: (data: { userParams: UserBaseParams, plans: { name: string, params: SimulationParams }[] }) => void;
 }
 
 const DEFAULT_USER_PARAMS: UserBaseParams = {
@@ -264,6 +267,21 @@ export const usePlanStore = create<PlanStore>()(
                     }
                 }));
                 get().recalculateResults();
+            },
+
+            importData: (data) => {
+                const newPlans: PlanState[] = data.plans.map((p, idx) => ({
+                    id: `imported-${Date.now()}-${idx}`,
+                    name: p.name,
+                    params: p.params,
+                    results: runSimulation(p.params),
+                    isVisible: true,
+                }));
+
+                set({
+                    userParams: data.userParams,
+                    plans: newPlans
+                });
             },
         }),
         {

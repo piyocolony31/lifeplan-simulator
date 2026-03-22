@@ -84,14 +84,29 @@ export default function Sidebar() {
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-auto">
-                                    <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
-                                        <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Interest</span>
-                                        {plan.params.loanInterestRate}%
-                                    </div>
-                                    <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
-                                        <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Price</span>
-                                        {plan.params.propertyPrice}万
-                                    </div>
+                                    {plan.params.planType === 'RENT' ? (
+                                        <>
+                                            <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
+                                                <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Rent</span>
+                                                {plan.params.monthlyRent}万
+                                            </div>
+                                            <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
+                                                <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Category</span>
+                                                賃貸
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
+                                                <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Interest</span>
+                                                {plan.params.loanInterestRate}%
+                                            </div>
+                                            <div className="bg-slate-50 px-2 py-1.5 rounded-lg text-[10px] font-bold text-slate-500">
+                                                <span className="block text-[8px] opacity-70 uppercase tracking-tighter">Price</span>
+                                                {plan.params.propertyPrice}万
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -317,22 +332,45 @@ export default function Sidebar() {
 
             {/* フッターアクション */}
             <div className="p-4 border-t bg-slate-50 mt-auto shrink-0 z-10">
-                <button
-                    onClick={async () => {
-                        const { exportSimulationToCSV } = await import('@/lib/export');
-                        exportSimulationToCSV();
-                    }}
-                    className="w-full py-3 bg-slate-800 text-white text-[12px] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition-all shadow-sm"
-                >
-                    <Download size={14} className="opacity-70" />
-                    CSV出力
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                    <button
+                        onClick={async () => {
+                            const { exportSimulationToCSV } = await import('@/lib/export');
+                            exportSimulationToCSV();
+                        }}
+                        className="py-3 bg-slate-800 text-white text-[10px] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-700 transition-all shadow-sm"
+                    >
+                        <Download size={14} className="opacity-70" />
+                        CSV出力
+                    </button>
+                    <label className="py-3 bg-white border border-slate-300 text-slate-700 text-[10px] font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-sm cursor-pointer">
+                        <PlusCircle size={14} className="opacity-70 text-slate-400" />
+                        インポート
+                        <input
+                            type="file"
+                            accept=".csv"
+                            className="hidden"
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const { importSimulationFromCSV } = await import('@/lib/import');
+                                const result = await importSimulationFromCSV(file);
+                                if (result.success) {
+                                    alert(result.message);
+                                } else {
+                                    alert(result.message);
+                                }
+                                e.target.value = ''; // リセット
+                            }}
+                        />
+                    </label>
+                </div>
             </div>
 
             {/* モーダル表示 */}
             {editingPlanId && (
                 <PlanDetailEditor
-                    planId={editingPlanId}
+                    planId={editingPlanId!}
                     onClose={() => setEditingPlanId(null)}
                 />
             )}

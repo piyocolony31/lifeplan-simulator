@@ -52,8 +52,19 @@ export function exportSimulationToCSV() {
 
     const csvContent = rows.join('\n');
 
+    // インポート復元用のメタデータを末尾に追加（# で始まるコメント行として）
+    const metadata = {
+        version: '1.0',
+        userParams: usePlanStore.getState().userParams,
+        plans: plans.map(p => ({
+            name: p.name,
+            params: p.params
+        }))
+    };
+    const finalContent = `${csvContent}\n\n# METADATA: ${JSON.stringify(metadata)}`;
+
     // Excelで開いた際の文字化けを防ぐため、BOM (Byte Order Mark) を追加
-    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), finalContent], { type: 'text/csv;charset=utf-8;' });
 
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
