@@ -179,7 +179,7 @@ export default function SimChart() {
                             <Tooltip
                                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                                 labelFormatter={(label) => `${label}歳の年間支出内訳`}
-                                formatter={(value: any, name: string) => [value.toLocaleString() + '万', BREAKDOWN_LABELS[name] || name]}
+                                formatter={(value: any, name: any) => [value.toLocaleString() + '万', BREAKDOWN_LABELS[name as string] || name]}
                             />
                             <Legend verticalAlign="top" align="right" iconType="rect" wrapperStyle={{ paddingBottom: 20 }} />
                             {Object.keys(BREAKDOWN_COLORS).map((key) => (
