@@ -90,6 +90,8 @@ export function runSimulation(params: SimulationParams): YearlyResult[] {
     const startYear = new Date().getFullYear();
     const totalYears = params.deathAge - params.currentAge;
 
+    if (totalYears < 0) return [];
+
     for (let i = 0; i <= totalYears; i++) {
         const year = startYear + i;
         const age = params.currentAge + i;

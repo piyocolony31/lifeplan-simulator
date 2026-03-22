@@ -41,9 +41,19 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                             type="text"
                             value={plan.name}
                             onChange={e => usePlanStore.getState().renamePlan(planId, e.target.value)}
-                            className="text-xl font-black text-slate-800 bg-transparent border-b border-dashed border-slate-300 focus:border-blue-500 focus:outline-none w-full"
+                            className="text-xl font-black text-slate-800 bg-transparent border-b border-dashed border-slate-300 focus:border-blue-500 focus:outline-none w-full mb-1"
                         />
-                        <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">{plan.params.planType}</p>
+                        <select
+                            value={plan.params.planType}
+                            onChange={e => handleChange('planType', e.target.value as HousingPlanType)}
+                            className="text-[10px] text-blue-600 font-bold uppercase tracking-widest bg-white border border-blue-100 rounded-md px-2 py-1 outline-none hover:bg-blue-50 transition-all cursor-pointer shadow-sm"
+                        >
+                            <option value="NEW_CONDO">新築マンション</option>
+                            <option value="USED_CONDO">中古マンション</option>
+                            <option value="NEW_HOUSE">新築戸建て</option>
+                            <option value="USED_HOUSE">中古戸建て</option>
+                            <option value="RENT">賃貸住まい</option>
+                        </select>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
                         <X size={20} />
@@ -64,7 +74,7 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                                     <span className="text-[10px] font-bold opacity-80 uppercase tracking-tighter">実質月額コスト</span>
                                     <div className="text-lg font-black leading-tight">
                                         {Math.round(
-                                            (plan.params.loanAmount > 0 ? (plan.results[0].mortgagePayment / 12) : 0) +
+                                            (plan.params.loanAmount > 0 && plan.results.length > 0 ? (plan.results[0].mortgagePayment / 12) : 0) +
                                             ((plan.params.fixedAssetTax + plan.params.managementFee + plan.params.repairReserve + plan.params.insuranceFee) / 12)
                                         ).toLocaleString()} <span className="text-xs font-normal">万円</span>
                                     </div>
@@ -116,6 +126,16 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                                     />
                                 </div>
                             </div>
+                            {plan.params.planType.startsWith('USED') && (
+                                <p className="text-[10px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-dashed mt-4 leading-relaxed font-medium">
+                                    ※中古物件のため、初期費用に<strong>仲介手数料（約3% + 6万円）</strong>が自動加算されます。
+                                </p>
+                            )}
+                            {plan.params.planType === 'NEW_CONDO' && (
+                                <p className="text-[10px] text-slate-500 bg-blue-50/50 p-2 rounded-lg border border-dashed border-blue-100 mt-4 leading-relaxed font-medium">
+                                    ※新築マンションのため、初期費用に<strong>修繕積立基金（一括）</strong>の概算が加算されます。
+                                </p>
+                            )}
                         </section>
                     )}
 
@@ -295,8 +315,8 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                         </section>
                     )}
 
-                    {/* 維持費 */}
-                    {!isRent && (
+                    {/* 維持費（マンションのみ） */}
+                    {!isRent && plan.params.planType.includes('CONDO') && (
                         <section className="space-y-4">
                             <h3 className="text-sm font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wide">
                                 <Building2 size={16} /> 維持費用 (年間)
@@ -321,8 +341,32 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                                     </div>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="font-semibold text-slate-600">火災/医療保険等 (万)</label>
+                                    <label className="font-semibold text-slate-600">火災/地震保険等 (万)</label>
                                     <input type="number" value={plan.params.insuranceFee} onChange={e => handleChange('insuranceFee', Number(e.target.value))} className="w-full px-4 py-2 border rounded-xl" />
+                                </div>
+                            </div>
+                        </section>
+                    )}
+
+                    {/* 維持費（戸建ての場合） */}
+                    {!isRent && plan.params.planType.includes('HOUSE') && (
+                        <section className="space-y-4">
+                            <h3 className="text-sm font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wide">
+                                <Building2 size={16} /> 維持費用 (年間)
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4 text-xs">
+                                <div className="space-y-1">
+                                    <label className="font-semibold text-slate-600">固定資産税 (万)</label>
+                                    <input type="number" value={plan.params.fixedAssetTax} onChange={e => handleChange('fixedAssetTax', Number(e.target.value))} className="w-full px-4 py-2 border rounded-xl" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="font-semibold text-slate-600">火災/地震保険等 (万)</label>
+                                    <input type="number" value={plan.params.insuranceFee} onChange={e => handleChange('insuranceFee', Number(e.target.value))} className="w-full px-4 py-2 border rounded-xl" />
+                                </div>
+                                <div className="col-span-2">
+                                    <p className="text-[10px] text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-dashed leading-relaxed">
+                                        ※戸建ての場合、管理費・修繕積立金は発生しません。将来の大型修繕に向けた備えは「ライフイベント」から個別に設定することを推奨します。
+                                    </p>
                                 </div>
                             </div>
                         </section>

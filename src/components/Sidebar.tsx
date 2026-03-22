@@ -18,8 +18,10 @@ import {
 import PlanDetailEditor from './PlanDetailEditor';
 
 export default function Sidebar() {
-    const { userParams, updateUserParams, plans, togglePlanVisibility, removePlan, addPlan } = usePlanStore();
+    const { userParams, updateUserParams, plans, togglePlanVisibility, removePlan, addPlan, _hasHydrated } = usePlanStore();
     const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+
+    if (!_hasHydrated) return null;
 
     return (
         <aside className="w-80 border-r bg-slate-50 h-screen flex flex-col shadow-xl z-20">

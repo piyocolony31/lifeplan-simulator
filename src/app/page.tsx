@@ -5,7 +5,10 @@ import { usePlanStore } from '@/store/usePlanStore';
 import { Wallet, Landmark, AlertCircle } from 'lucide-react';
 
 export default function Home() {
-  const { plans } = usePlanStore();
+  const { plans, _hasHydrated } = usePlanStore();
+
+  if (!_hasHydrated) return null;
+
   const visiblePlans = plans.filter(p => p.isVisible);
 
   return (
@@ -24,7 +27,7 @@ export default function Home() {
       {/* サマリーカード */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {visiblePlans.slice(0, 3).map((plan, idx) => {
-          const finalAssets = plan.results[plan.results.length - 1].totalAssets;
+          const finalAssets = plan.results.length > 0 ? plan.results[plan.results.length - 1].totalAssets : 0;
           const isPositive = finalAssets > 0;
 
           return (
@@ -63,7 +66,7 @@ export default function Home() {
             {visiblePlans.map((plan) => {
               const totalHousingCost = plan.results.reduce((sum, r) => sum + r.housingExpenses, 0);
               const totalDeduction = plan.results.reduce((sum, r) => sum + r.mortgageDeduction, 0);
-              const finalAssets = plan.results[plan.results.length - 1].totalAssets;
+              const finalAssets = plan.results.length > 0 ? plan.results[plan.results.length - 1].totalAssets : 0;
 
               return (
                 <tr key={plan.id} className="hover:bg-slate-50/80 transition-colors">
