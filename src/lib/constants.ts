@@ -14,7 +14,7 @@ export const MORTGAGE_DEDUCTION_CONFIG = {
                 LONG_LIFE: 5000,
                 ZEH: 4500,
                 ENERGY_SAVE: 4000,
-                STANDARD: 0, // 2024年以降建築確認の一般住宅は原則対象外
+                STANDARD: 0, 
             },
             STANDARD: {
                 LONG_LIFE: 4500,
@@ -25,13 +25,15 @@ export const MORTGAGE_DEDUCTION_CONFIG = {
         },
         USED: {
             ALL: {
-                LONG_LIFE: 3000, // ZEH、省エネ含む
+                LONG_LIFE: 3000,
                 ZEH: 3000,
                 ENERGY_SAVE: 3000,
                 STANDARD: 2000,
             }
         }
-    }
+    },
+    // 住民税からの控除上限（所得税の課税総所得金額等の5% または 9.75万円）
+    RESIDENT_TAX_DEDUCTION_LIMIT: 9.75
 };
 
 /**
@@ -40,17 +42,17 @@ export const MORTGAGE_DEDUCTION_CONFIG = {
 export const FEE_CONFIG = {
     BROKERAGE_FEE_RATE: 0.03, // 3%
     BROKERAGE_FEE_FIXED: 60000, // 6万円
-    REGISTRATION_FEE_RATE: 0.007, // 登記費用目安（登録免許税含め0.5-1%程度）
-    LOAN_FEE_RATE: 0.022, // 融資手数料（定率2.2%）
+    REGISTRATION_FEE_RATE: 0.007,
+    LOAN_FEE_RATE: 0.022,
 };
 
 /**
  * 税・社会保険の簡易計算用パラメータ（概算）
  */
 export const TAX_CONFIG = {
-    INCOME_TAX_RATE: 0.1, // 簡易的な実効税率（所得によるが10%程度と仮定）
+    INCOME_TAX_RATE: 0.08, // 社会保険料控除後の課税所得に対する実効税率（年収600-1000万を想定して調整）
     RESIDENT_TAX_RATE: 0.1, // 住民税 10%
-    SOCIAL_INSURANCE_RATE: 0.15, // 社会保険料 15%
+    SOCIAL_INSURANCE_RATE: 0.14, // 厚生年金・健康保険・雇用保険の合計（会社負担除く本人負担分）
 };
 
 /**

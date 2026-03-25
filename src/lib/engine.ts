@@ -25,13 +25,14 @@ export function calculateInitialFees(params: SimulationParams): number {
 }
 
 /**
- * 住宅ローン控除額の計算
+ * 住宅ローン控除額の計算（詳細版）
  */
-export function calculateMortgageDeduction(
+export function calculateMortgageDeductionDetail(
     balance: number,
     yearIdx: number,
     params: SimulationParams,
-    paidTax: number
+    incomeTax: number,
+    residentTax: number
 ): number {
     const isUsed = params.planType === 'USED_HOUSE' || params.planType === 'USED_CONDO';
     const period = isUsed ? MORTGAGE_DEDUCTION_CONFIG.PERIOD_USED : MORTGAGE_DEDUCTION_CONFIG.PERIOD_NEW;
@@ -43,7 +44,7 @@ export function calculateMortgageDeduction(
     if (isUsed) {
         limit = params.propertyCategory === 'STANDARD'
             ? MORTGAGE_DEDUCTION_CONFIG.LIMITS.USED.ALL.STANDARD
-            : MORTGAGE_DEDUCTION_CONFIG.LIMITS.USED.ALL.ZEH; // 長期・ZEH・省エネは一律3000万
+            : MORTGAGE_DEDUCTION_CONFIG.LIMITS.USED.ALL.ZEH; 
     } else {
         const categoryLimits = params.householdType === 'CHILD_REARING_OR_YOUNG'
             ? MORTGAGE_DEDUCTION_CONFIG.LIMITS.NEW.CHILD_REARING_OR_YOUNG
@@ -52,12 +53,20 @@ export function calculateMortgageDeduction(
     }
 
     const baseAmount = Math.min(balance, limit);
-    const deduction = baseAmount * MORTGAGE_DEDUCTION_CONFIG.RATE;
+    const deductionPossible = baseAmount * MORTGAGE_DEDUCTION_CONFIG.RATE;
 
-    // 所得税＋住民税（上限あり）を考慮
-    // 住民税からの控除は「所得税の課税総所得金額等の5%（最高9.75万円）」などの制限があるが、
-    // 簡易的に「支払った税額」を上限とする
-    return Math.min(deduction, paidTax);
+    // 1. 所得税から控除
+    const deductionFromIncomeTax = Math.min(deductionPossible, incomeTax);
+    
+    // 2. 所得税から引ききれなかった分を住民税から控除（上限 9.75万円）
+    const remainingDeduction = deductionPossible - deductionFromIncomeTax;
+    const deductionFromResidentTax = Math.min(
+        remainingDeduction, 
+        residentTax, 
+        MORTGAGE_DEDUCTION_CONFIG.RESIDENT_TAX_DEDUCTION_LIMIT
+    );
+
+    return deductionFromIncomeTax + deductionFromResidentTax;
 }
 
 /**
@@ -65,9 +74,12 @@ export function calculateMortgageDeduction(
  */
 export function runSimulation(params: SimulationParams, startYear: number = new Date().getFullYear()): YearlyResult[] {
     const results: YearlyResult[] = [];
-    let currentAssets = params.initialAssets - params.downPayment;
-    let mortgageBalance = params.loanAmount;
-    const monthlyMortgage = calculateMonthlyMortgage(params.loanAmount, params.loanInterestRate, params.loanPeriod);
+    const isRent = params.planType === 'RENT';
+    
+    // 賃貸の場合は頭金やローン借入を資産から差し引かない/加えない
+    let currentAssets = params.initialAssets - (isRent ? 0 : params.downPayment);
+    let mortgageBalance = isRent ? 0 : params.loanAmount;
+    const monthlyMortgage = isRent ? 0 : calculateMonthlyMortgage(params.loanAmount, params.loanInterestRate, params.loanPeriod);
 
     const totalYears = params.deathAge - params.currentAge;
 
@@ -79,15 +91,20 @@ export function runSimulation(params: SimulationParams, startYear: number = new 
         const isRetired = age >= params.retireAge;
 
         // 1. 収入と税金
-        // 定年後は200万（年金）と仮定。現役時代は給与上昇率を考慮
-        const income = isRetired ? 200 : (params.personalIncome + (params.hasSpouse ? params.spouseIncome : 0)) * Math.pow(1 + params.salaryGrowthRate / 100, i);
-        const incomeTax = income * TAX_CONFIG.INCOME_TAX_RATE;
-        const residentTax = income * TAX_CONFIG.RESIDENT_TAX_RATE;
-        const socialInsurance = income * TAX_CONFIG.SOCIAL_INSURANCE_RATE;
-        const disposableIncome = income - (incomeTax + residentTax + socialInsurance);
+        // 額面年収
+        const grossIncome = isRetired ? 200 : (params.personalIncome + (params.hasSpouse ? params.spouseIncome : 0)) * Math.pow(1 + params.salaryGrowthRate / 100, i);
+        
+        // 社会保険料（額面にかかる）
+        const socialInsurance = grossIncome * TAX_CONFIG.SOCIAL_INSURANCE_RATE;
+        
+        // 所得税・住民税（社会保険料控除後をベースにする）
+        const taxableIncomeBase = Math.max(0, grossIncome - socialInsurance);
+        const incomeTax = taxableIncomeBase * TAX_CONFIG.INCOME_TAX_RATE;
+        const residentTax = taxableIncomeBase * TAX_CONFIG.RESIDENT_TAX_RATE;
+        
+        const disposableIncomeBeforeDeduction = grossIncome - (socialInsurance + incomeTax + residentTax);
 
         // 2. 支出
-        // 基本生活費（ユーザー入力）＋ インフレ率
         const yearlyBaseLivingExpenses = (params.baseLivingExpenses * 12) * Math.pow(1 + params.inflationRate / 100, i);
 
         let housingExpenses = 0;
@@ -100,7 +117,6 @@ export function runSimulation(params: SimulationParams, startYear: number = new 
                 housingExpenses += params.monthlyRent * params.renewalFeeRate;
             }
         } else {
-            // 修繕積立金の段階的上昇（5年ごとに stepUpRate 分上昇と仮定）
             const stepPeriods = Math.floor(i / 5);
             currentRepairReserve = params.repairReserve * Math.pow(1 + params.repairReserveStepUpRate / 100, stepPeriods);
 
@@ -109,7 +125,6 @@ export function runSimulation(params: SimulationParams, startYear: number = new 
             housingExpenses = yearlyMortgage + maintenance;
         }
 
-        // ライフイベント支出（一時支出）
         const individualEventCost = params.events
             .filter(e => !e.id.startsWith('common-event-'))
             .filter(e => e.year === year || (e.year === age && e.year < 200))
@@ -121,23 +136,24 @@ export function runSimulation(params: SimulationParams, startYear: number = new 
 
         const totalExpenses = yearlyBaseLivingExpenses + housingExpenses + individualEventCost + commonEventCost;
 
-        // 3. ローン控除
-        const mortgageDeduction = calculateMortgageDeduction(mortgageBalance, i, params, incomeTax + residentTax);
+        // 3. 住宅ローン控除
+        const mortgageDeduction = params.planType === 'RENT' 
+            ? 0 
+            : calculateMortgageDeductionDetail(mortgageBalance, i, params, incomeTax, residentTax);
 
-        // 4. 運用益
-        const investmentReturn = currentAssets > 0 ? currentAssets * (params.investmentReturnRate / 100) : 0;
+        // 4. 運用益（年初残高と今年収支の平均で計算）
+        const annualSurplus = disposableIncomeBeforeDeduction + mortgageDeduction - totalExpenses;
+        const investmentReturn = (currentAssets + annualSurplus / 2) * (params.investmentReturnRate / 100);
 
-        // 5. 資産価値（時価評価）
-        // 建物は耐用年数で直線減価、土地は維持（インフレ考慮せず保守的評価）
+        // 5. 資産価値
         const buildingValue = Math.max(0, params.buildingValue * (1 - i / params.buildingDepreciationYears));
         const propertyValue = params.planType === 'RENT' ? 0 : (params.landValue + buildingValue);
 
         // 6. 資産残高更新
-        const netCashFlow = (disposableIncome - totalExpenses) + mortgageDeduction + investmentReturn;
+        const netCashFlow = annualSurplus + investmentReturn;
         currentAssets += netCashFlow;
 
-        // 純資産 = 金融資産 + 物件価値 - ローン残高
-        // 賃貸の場合は propertyValue と mortgageBalance が 0 なので金融資産と一致する
+        // 純資産
         const netWorth = currentAssets + propertyValue - (params.planType === 'RENT' ? 0 : mortgageBalance);
 
         // ローン残高更新
@@ -150,10 +166,10 @@ export function runSimulation(params: SimulationParams, startYear: number = new 
         results.push({
             year,
             age,
-            income,
+            income: grossIncome,
             tax: incomeTax + residentTax,
             socialInsurance,
-            disposableIncome,
+            disposableIncome: disposableIncomeBeforeDeduction + mortgageDeduction,
             livingExpenses: yearlyBaseLivingExpenses,
             housingExpenses,
 

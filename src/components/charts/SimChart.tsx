@@ -16,7 +16,7 @@ import {
     Bar
 } from 'recharts';
 import { usePlanStore } from '@/store/usePlanStore';
-import { LayoutPanelLeft, LineChart as LineChartIcon, PieChart } from 'lucide-react';
+import { LayoutPanelLeft, LineChart as LineChartIcon, PieChart, Activity } from 'lucide-react';
 
 const COLORS = ['#2563eb', '#dc2626', '#16a34a', '#ca8a04', '#7c3aed'];
 const BREAKDOWN_COLORS: Record<string, string> = {
@@ -47,6 +47,7 @@ export default function SimChart() {
     const { plans } = usePlanStore();
     const [chartMode, setChartMode] = useState<'assets' | 'networth' | 'breakdown'>('assets');
     const [selectedPlanId, setSelectedPlanId] = useState<string>(plans[0]?.id || '');
+    const [strokeWidth, setStrokeWidth] = useState<number>(2);
 
     const visiblePlans = plans.filter(p => p.isVisible);
     const selectedPlan = plans.find(p => p.id === selectedPlanId) || visiblePlans[0];
@@ -108,28 +109,47 @@ export default function SimChart() {
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">単位: 万円</p>
                 </div>
 
-                <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
-                    <button
-                        onClick={() => setChartMode('assets')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chartMode === 'assets' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        <LineChartIcon size={14} />
-                        金融資産
-                    </button>
-                    <button
-                        onClick={() => setChartMode('networth')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chartMode === 'networth' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        <PieChart size={14} />
-                        純資産
-                    </button>
-                    <button
-                        onClick={() => setChartMode('breakdown')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chartMode === 'breakdown' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                    >
-                        <LayoutPanelLeft size={14} />
-                        支出内訳
-                    </button>
+                <div className="flex items-center gap-3">
+                    <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+                        <button
+                            onClick={() => setChartMode('assets')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chartMode === 'assets' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <LineChartIcon size={14} />
+                            金融資産
+                        </button>
+                        <button
+                            onClick={() => setChartMode('networth')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chartMode === 'networth' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <PieChart size={14} />
+                            純資産
+                        </button>
+                        <button
+                            onClick={() => setChartMode('breakdown')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${chartMode === 'breakdown' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            <LayoutPanelLeft size={14} />
+                            支出内訳
+                        </button>
+                    </div>
+
+                    {/* 線の太さ調整 */}
+                    {(chartMode === 'assets' || chartMode === 'networth') && (
+                        <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
+                            <Activity size={12} className="text-slate-400" />
+                            <input
+                                type="range"
+                                min="1"
+                                max="6"
+                                step="0.5"
+                                value={strokeWidth}
+                                onChange={(e) => setStrokeWidth(Number(e.target.value))}
+                                className="w-16 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                title="線の太さ"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -165,9 +185,11 @@ export default function SimChart() {
                                     type="monotone"
                                     dataKey={p.name}
                                     stroke={COLORS[idx % COLORS.length]}
-                                    strokeWidth={4}
+                                    strokeWidth={strokeWidth}
                                     dot={false}
-                                    activeDot={{ r: 6, strokeWidth: 0 }}
+                                    activeDot={{ r: 4, strokeWidth: 0 }}
+                                    connectNulls
+                                    isAnimationActive={false}
                                 />
                             ))}
                         </LineChart>
