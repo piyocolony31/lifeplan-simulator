@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { SimulationParams, YearlyResult, HousingPlanType, UserBaseParams, LifeEvent } from '../lib/types';
 import { runSimulation, calculateInitialFees } from '../lib/engine';
+import { HOUSING_PLAN_LABELS } from '../lib/constants';
 
 interface PlanState {
     id: string;
@@ -83,7 +84,7 @@ const createDefaultPlanParams = (type: HousingPlanType, userParams: UserBasePara
     const initialFee = calculateInitialFees(params);
     if (initialFee > 0) {
         params.events.push({
-            id: `initial-fee-${Date.now()}`,
+            id: 'initial-purchase-fee',
             year: userParams.currentAge,
             label: type === 'RENT' ? '賃貸初期費用' : '購入時諸費用',
             cost: Math.round(initialFee),
@@ -102,9 +103,9 @@ export const usePlanStore = create<PlanStore>()(
                     const params = createDefaultPlanParams('NEW_HOUSE', DEFAULT_USER_PARAMS);
                     return {
                         id: 'plan-1',
-                        name: '新築戸建',
+                        name: HOUSING_PLAN_LABELS['NEW_HOUSE'],
                         params: params,
-                        results: runSimulation(params),
+                        results: runSimulation(params, 2024),
                         isVisible: true,
                     };
                 })(),
@@ -112,9 +113,9 @@ export const usePlanStore = create<PlanStore>()(
                     const params = createDefaultPlanParams('RENT', DEFAULT_USER_PARAMS);
                     return {
                         id: 'plan-2',
-                        name: '賃貸住まい',
+                        name: HOUSING_PLAN_LABELS['RENT'],
                         params: params,
-                        results: runSimulation(params),
+                        results: runSimulation(params, 2024),
                         isVisible: true,
                     };
                 })()
@@ -149,9 +150,10 @@ export const usePlanStore = create<PlanStore>()(
             addPlan: (type, name) => {
                 const { userParams } = get();
                 const newParams = createDefaultPlanParams(type, userParams);
+                const defaultName = HOUSING_PLAN_LABELS[type] || '新しいプラン';
                 const newPlan: PlanState = {
                     id: `plan-${Date.now()}`,
-                    name,
+                    name: name || defaultName,
                     params: newParams,
                     results: runSimulation(newParams),
                     isVisible: true,
@@ -167,18 +169,22 @@ export const usePlanStore = create<PlanStore>()(
                 const { userParams, plans } = get();
                 set({
                     plans: plans.map((p) => {
-                        // 共通イベントとプラン個別イベントを合算
-                        const mergedEvents = [...(userParams.commonEvents || []), ...(p.params.events || [])];
+                        // 1. 個別イベントのみを抽出（以前に混入した共通イベントがあれば確実に除外）
+                        const individualEvents = (p.params.events || []).filter(e => !e.id.startsWith('common-event-'));
 
+                        // 2. ストアに保存するパラメータには「個別イベントのみ」を保持させる
                         const updatedParams: SimulationParams = {
                             ...p.params,
                             ...userParams,
-                            events: mergedEvents,
+                            events: individualEvents,
+                            commonEvents: userParams.commonEvents || [],
                         };
+
                         return {
                             ...p,
                             params: updatedParams,
-                            results: runSimulation(updatedParams),
+                            // エンジン側で commonEvents を個別に扱うようにしたので、そのまま渡す
+                            results: runSimulation(updatedParams, 2024),
                         };
                     }),
                 });
@@ -274,7 +280,7 @@ export const usePlanStore = create<PlanStore>()(
                     id: `imported-${Date.now()}-${idx}`,
                     name: p.name,
                     params: p.params,
-                    results: runSimulation(p.params),
+                    results: runSimulation(p.params, 2024),
                     isVisible: true,
                 }));
 

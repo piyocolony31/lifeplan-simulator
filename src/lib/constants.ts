@@ -52,3 +52,14 @@ export const TAX_CONFIG = {
     RESIDENT_TAX_RATE: 0.1, // 住民税 10%
     SOCIAL_INSURANCE_RATE: 0.15, // 社会保険料 15%
 };
+
+/**
+ * 住宅プランの名称ラベル
+ */
+export const HOUSING_PLAN_LABELS: Record<string, string> = {
+    'NEW_CONDO': '新築マンション',
+    'USED_CONDO': '中古マンション',
+    'NEW_HOUSE': '新築戸建て',
+    'USED_HOUSE': '中古戸建て',
+    'RENT': '賃貸住まい'
+};

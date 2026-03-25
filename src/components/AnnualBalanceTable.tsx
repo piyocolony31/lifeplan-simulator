@@ -51,7 +51,8 @@ export default function AnnualBalanceTable() {
                             <th className="px-4 py-3 font-semibold">住居費合計_万円</th>
                             <th className="px-4 py-3 font-semibold">ローン残債_万円</th>
                             <th className="px-4 py-3 font-semibold">住宅ローン控除額_万円</th>
-                            <th className="px-4 py-3 font-semibold text-wrap min-w-[120px]">ライフイベント支出_万円</th>
+                            <th className="px-4 py-3 font-semibold text-wrap min-w-[120px]">個別イベント支出_万円</th>
+                            <th className="px-4 py-3 font-semibold text-wrap min-w-[120px]">共通イベント支出_万円</th>
                             <th className="px-4 py-3 font-semibold">運用益_万円</th>
                         </tr>
                     </thead>
@@ -68,8 +69,11 @@ export default function AnnualBalanceTable() {
                                 <td className="px-4 py-3 text-red-500">{Math.round(res.housingExpenses).toLocaleString()} <span className="text-[10px] text-slate-400">万</span></td>
                                 <td className="px-4 py-3">{Math.round(res.mortgageBalance).toLocaleString()} <span className="text-[10px] text-slate-400">万</span></td>
                                 <td className="px-4 py-3 text-green-600">{Math.round(res.mortgageDeduction).toLocaleString()} <span className="text-[10px] text-slate-400">万</span></td>
-                                <td className={`px-4 py-3 ${res.educationExpenses + res.otherExpenses > 0 ? 'text-red-500 font-bold' : ''}`}>
-                                    {Math.round(res.educationExpenses + res.otherExpenses).toLocaleString()} <span className="text-[10px] text-slate-400 font-normal">万</span>
+                                <td className={`px-4 py-3 ${res.otherExpenses > 0 ? 'text-red-500 font-bold' : ''}`}>
+                                    {Math.round(res.otherExpenses).toLocaleString()} <span className="text-[10px] text-slate-400 font-normal">万</span>
+                                </td>
+                                <td className={`px-4 py-3 ${res.commonEventExpenses > 0 ? 'text-red-500 font-bold' : ''}`}>
+                                    {Math.round(res.commonEventExpenses).toLocaleString()} <span className="text-[10px] text-slate-400 font-normal">万</span>
                                 </td>
                                 <td className="px-4 py-3 text-green-600">{Math.round(res.investmentReturn).toLocaleString()} <span className="text-[10px] text-slate-400 font-normal">万</span></td>
                             </tr>

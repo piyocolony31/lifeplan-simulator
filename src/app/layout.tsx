@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <body className="flex h-screen overflow-hidden bg-white text-slate-900">
         <Sidebar />
         <main className="flex-1 overflow-y-auto bg-slate-50/30">

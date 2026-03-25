@@ -63,13 +63,12 @@ export function calculateMortgageDeduction(
 /**
  * メインシミュレーション実行
  */
-export function runSimulation(params: SimulationParams): YearlyResult[] {
+export function runSimulation(params: SimulationParams, startYear: number = new Date().getFullYear()): YearlyResult[] {
     const results: YearlyResult[] = [];
     let currentAssets = params.initialAssets - params.downPayment;
     let mortgageBalance = params.loanAmount;
     const monthlyMortgage = calculateMonthlyMortgage(params.loanAmount, params.loanInterestRate, params.loanPeriod);
 
-    const startYear = new Date().getFullYear();
     const totalYears = params.deathAge - params.currentAge;
 
     if (totalYears < 0) return [];
@@ -111,11 +110,16 @@ export function runSimulation(params: SimulationParams): YearlyResult[] {
         }
 
         // ライフイベント支出（一時支出）
-        const eventCost = params.events
-            .filter(e => e.year === year || (e.year === age && e.year < 200)) // 年指定か年齢指定か（簡易的に100以下なら年齢とみなす）
+        const individualEventCost = params.events
+            .filter(e => !e.id.startsWith('common-event-'))
+            .filter(e => e.year === year || (e.year === age && e.year < 200))
             .reduce((sum, e) => sum + e.cost, 0);
 
-        const totalExpenses = yearlyBaseLivingExpenses + housingExpenses + eventCost;
+        const commonEventCost = (params.commonEvents || [])
+            .filter(e => e.year === year || (e.year === age && e.year < 200))
+            .reduce((sum, e) => sum + e.cost, 0);
+
+        const totalExpenses = yearlyBaseLivingExpenses + housingExpenses + individualEventCost + commonEventCost;
 
         // 3. ローン控除
         const mortgageDeduction = calculateMortgageDeduction(mortgageBalance, i, params, incomeTax + residentTax);
@@ -126,17 +130,18 @@ export function runSimulation(params: SimulationParams): YearlyResult[] {
         // 5. 資産価値（時価評価）
         // 建物は耐用年数で直線減価、土地は維持（インフレ考慮せず保守的評価）
         const buildingValue = Math.max(0, params.buildingValue * (1 - i / params.buildingDepreciationYears));
-        const propertyValue = params.landValue + buildingValue;
+        const propertyValue = params.planType === 'RENT' ? 0 : (params.landValue + buildingValue);
 
         // 6. 資産残高更新
         const netCashFlow = (disposableIncome - totalExpenses) + mortgageDeduction + investmentReturn;
         currentAssets += netCashFlow;
 
         // 純資産 = 金融資産 + 物件価値 - ローン残高
-        const netWorth = currentAssets + propertyValue - mortgageBalance;
+        // 賃貸の場合は propertyValue と mortgageBalance が 0 なので金融資産と一致する
+        const netWorth = currentAssets + propertyValue - (params.planType === 'RENT' ? 0 : mortgageBalance);
 
         // ローン残高更新
-        if (mortgageBalance > 0) {
+        if (params.planType !== 'RENT' && mortgageBalance > 0) {
             const yearlyPrincipalRepayment = (monthlyMortgage * 12) - (mortgageBalance * (params.loanInterestRate / 100));
             mortgageBalance -= Math.max(0, yearlyPrincipalRepayment);
             if (mortgageBalance < 0) mortgageBalance = 0;
@@ -162,9 +167,10 @@ export function runSimulation(params: SimulationParams): YearlyResult[] {
             renewalFee: params.planType === 'RENT' && i > 0 && i % 2 === 0 ? params.monthlyRent * params.renewalFeeRate : 0,
 
             educationExpenses: 0,
-            otherExpenses: eventCost,
-            mortgageBalance,
-            mortgageDeduction,
+            otherExpenses: individualEventCost,
+            commonEventExpenses: commonEventCost,
+            mortgageBalance: params.planType === 'RENT' ? 0 : mortgageBalance,
+            mortgageDeduction: params.planType === 'RENT' ? 0 : mortgageDeduction,
             investmentReturn,
             netCashFlow,
             totalAssets: currentAssets,

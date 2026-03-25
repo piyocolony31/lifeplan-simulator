@@ -2,19 +2,19 @@
 
 import { useState } from 'react';
 import { usePlanStore } from '@/store/usePlanStore';
+import { HOUSING_PLAN_LABELS } from '@/lib/constants';
 import {
     Users,
     TrendingUp,
-    Settings2,
     Home,
     PlusCircle,
     Eye,
     EyeOff,
     Trash2,
     Settings,
-    ChevronRight,
     ShoppingBag,
-    Download
+    Download,
+    ChevronRight
 } from 'lucide-react';
 import PlanDetailEditor from './PlanDetailEditor';
 
@@ -42,7 +42,7 @@ export default function Sidebar() {
                             Housing Scenarios
                         </div>
                         <button
-                            onClick={() => addPlan('NEW_HOUSE', '新しいプラン')}
+                            onClick={() => addPlan('NEW_HOUSE', '')}
                             className="text-blue-600 hover:bg-blue-100 p-1.5 rounded-full transition-all active:scale-90"
                         >
                             <PlusCircle size={20} />
@@ -85,14 +85,7 @@ export default function Sidebar() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-auto">
                                     {(() => {
-                                        const typeLabels: Record<string, string> = {
-                                            'NEW_HOUSE': '新築戸建',
-                                            'USED_HOUSE': '中古戸建',
-                                            'NEW_CONDO': '新築マンション',
-                                            'USED_CONDO': '中古マンション',
-                                            'RENT': '賃貸'
-                                        };
-                                        const label = typeLabels[plan.params.planType] || '不明';
+                                        const label = HOUSING_PLAN_LABELS[plan.params.planType] || '不明';
 
                                         return (
                                             <>

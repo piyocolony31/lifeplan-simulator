@@ -103,7 +103,8 @@ export interface YearlyResult {
   renewalFee: number;
 
   educationExpenses: number;
-  otherExpenses: number;
+  otherExpenses: number; // 個別ライフイベント支出
+  commonEventExpenses: number; // 共通ライフイベント支出
   mortgageBalance: number;
   mortgageDeduction: number; // ローン控除額
   investmentReturn: number;

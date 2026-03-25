@@ -12,7 +12,8 @@ import {
     Trash2
 } from 'lucide-react';
 import { usePlanStore } from '@/store/usePlanStore';
-import { PropertyCategory, HouseholdType, HousingPlanType, LifeEvent } from '@/lib/types';
+import { PropertyCategory, HousingPlanType } from '@/lib/types';
+import { HOUSING_PLAN_LABELS } from '@/lib/constants';
 
 interface Props {
     planId: string;
@@ -20,7 +21,7 @@ interface Props {
 }
 
 export default function PlanDetailEditor({ planId, onClose }: Props) {
-    const { plans, updatePlanParams, addLifeEvent, removeLifeEvent } = usePlanStore();
+    const { plans, updatePlanParams, addLifeEvent } = usePlanStore();
     const plan = plans.find(p => p.id === planId);
 
     if (!plan) return null;
@@ -45,7 +46,15 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                         />
                         <select
                             value={plan.params.planType}
-                            onChange={e => handleChange('planType', e.target.value as HousingPlanType)}
+                            onChange={e => {
+                                const newType = e.target.value as HousingPlanType;
+                                const oldType = plan.params.planType;
+                                // 名前が現在のタイプのデフォルト名と同じなら、新しいタイプのデフォルト名に変更する
+                                if (plan.name === HOUSING_PLAN_LABELS[oldType]) {
+                                    usePlanStore.getState().renamePlan(planId, HOUSING_PLAN_LABELS[newType]);
+                                }
+                                handleChange('planType', newType);
+                            }}
                             className="text-[10px] text-blue-600 font-bold uppercase tracking-widest bg-white border border-blue-100 rounded-md px-2 py-1 outline-none hover:bg-blue-50 transition-all cursor-pointer shadow-sm"
                         >
                             <option value="NEW_CONDO">新築マンション</option>
@@ -185,7 +194,7 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                             </button>
                         </div>
 
-                        {plan.params.events.length > 0 && (
+                        {plan.params.events.filter(e => !e.id.startsWith('common-event-')).length > 0 && (
                             <div className="flex items-center gap-3 px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                 <span className="flex-1">イベント名称</span>
                                 <span className="w-20 text-center">発生年</span>
@@ -195,16 +204,18 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                         )}
 
                         <div className="space-y-2">
-                            {plan.params.events.length === 0 ? (
+                            {plan.params.events.filter(e => !e.id.startsWith('common-event-')).length === 0 ? (
                                 <p className="text-xs text-slate-400 italic text-center py-4 bg-slate-50 rounded-2xl border border-dashed">イベントは登録されていません</p>
                             ) : (
-                                plan.params.events.map(event => (
+                                plan.params.events.filter(e => !e.id.startsWith('common-event-')).map(event => (
                                     <div key={event.id} className="flex items-center gap-3 bg-slate-50 p-3 rounded-2xl border hover:border-blue-200 transition-all group">
                                         <input
                                             type="text" value={event.label}
                                             onChange={e => {
-                                                const newEvents = plan.params.events.map(ev => ev.id === event.id ? { ...ev, label: e.target.value } : ev);
-                                                handleChange('events', newEvents);
+                                                const individualEvents = plan.params.events.filter(ev => !ev.id.startsWith('common-event-'));
+                                                const commonEvents = plan.params.events.filter(ev => ev.id.startsWith('common-event-'));
+                                                const newIndividualEvents = individualEvents.map(ev => ev.id === event.id ? { ...ev, label: e.target.value } : ev);
+                                                handleChange('events', [...commonEvents, ...newIndividualEvents]);
                                             }}
                                             className="flex-1 bg-white border border-slate-200 rounded-lg text-sm font-bold text-slate-700 px-3 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                                             placeholder="例：車の購入"
@@ -213,25 +224,38 @@ export default function PlanDetailEditor({ planId, onClose }: Props) {
                                             <input
                                                 type="number" value={event.year}
                                                 onChange={e => {
-                                                    const newEvents = plan.params.events.map(ev => ev.id === event.id ? { ...ev, year: Number(e.target.value) } : ev);
-                                                    handleChange('events', newEvents);
+                                                    const individualEvents = plan.params.events.filter(ev => !ev.id.startsWith('common-event-'));
+                                                    const commonEvents = plan.params.events.filter(ev => ev.id.startsWith('common-event-'));
+                                                    const newIndividualEvents = individualEvents.map(ev => ev.id === event.id ? { ...ev, year: Number(e.target.value) } : ev);
+                                                    handleChange('events', [...commonEvents, ...newIndividualEvents]);
                                                 }}
                                                 className="w-20 bg-white border border-slate-200 rounded-lg text-xs font-bold px-2 py-1.5 text-center"
                                                 placeholder="西暦"
                                             />
-                                            <div className="flex items-center gap-1">
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2 py-1">
                                                 <input
                                                     type="number" value={event.cost}
                                                     onChange={e => {
-                                                        const newEvents = plan.params.events.map(ev => ev.id === event.id ? { ...ev, cost: Number(e.target.value) } : ev);
-                                                        handleChange('events', newEvents);
+                                                        const individualEvents = plan.params.events.filter(ev => !ev.id.startsWith('common-event-'));
+                                                        const commonEvents = plan.params.events.filter(ev => ev.id.startsWith('common-event-'));
+                                                        const newIndividualEvents = individualEvents.map(ev => ev.id === event.id ? { ...ev, cost: Number(e.target.value) } : ev);
+                                                        handleChange('events', [...commonEvents, ...newIndividualEvents]);
                                                     }}
-                                                    className="w-16 bg-white border border-slate-200 rounded-lg text-xs font-bold px-2 py-1.5 text-center text-red-600"
+                                                    className="w-16 bg-transparent border-none text-xs font-bold text-center text-red-600 focus:ring-0 p-0"
                                                     placeholder="費用"
                                                 />
                                                 <span className="text-[10px] font-bold text-slate-400">万</span>
                                             </div>
-                                            <button onClick={() => removeLifeEvent(planId, event.id)} className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                                            <button
+                                                onClick={() => {
+                                                    const commonEvents = plan.params.events.filter(ev => ev.id.startsWith('common-event-'));
+                                                    const newIndividualEvents = plan.params.events.filter(ev => !ev.id.startsWith('common-event-') && ev.id !== event.id);
+                                                    handleChange('events', [...commonEvents, ...newIndividualEvents]);
+                                                }}
+                                                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            >
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
